@@ -76,7 +76,9 @@ def get_project(db: Session, project_id: int) -> models.Project | None:
     return db.get(models.Project, project_id)
 
 
-def get_projects(db: Session, owner_id: int, skip: int = 0, limit: int = 100) -> list[models.Project]:
+def get_projects(
+    db: Session, owner_id: int, skip: int = 0, limit: int = 100
+) -> list[models.Project]:
     stmt = (select(models.Project)
         .order_by(models.Project.id)
         .where(models.Project.owner_id == owner_id)
@@ -98,9 +100,11 @@ def create_project(db: Session, data: schemas.ProjectCreate, owner_id: int) -> m
     db.add(project)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as err:
         db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="Project already exists")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, detail="Project already exists"
+        ) from err
     db.refresh(project)
     return project
 

@@ -19,7 +19,6 @@ engine = create_engine(
 if is_sqlite:
     enable_sqlite_foreign_keys(engine)
 
-engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 TestSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 @pytest.fixture

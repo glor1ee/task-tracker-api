@@ -26,7 +26,9 @@ def test_task_with_unknown_project(client, headers):
 
 def test_deleting_project_deletes_its_tasks(client, headers):
     project = client.post("/projects/", json={"name": "Test Project"}, headers=headers).json()
-    client.post("/tasks/", json={"title": "Test Task", "project_id": project["id"]}, headers=headers)
+    client.post(
+        "/tasks/", json={"title": "Test Task", "project_id": project["id"]}, headers=headers
+    )
 
     client.delete(f"/projects/{project['id']}", headers=headers)
 
