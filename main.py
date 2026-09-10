@@ -1,15 +1,5 @@
+"""Entry point for `uvicorn main:app`; the application itself lives in app/main.py."""
 
-class A:
-    def clown():
-        print("clown A")
+from app.main import app
 
-class B:
-    def clown():
-        print("clown B")
-
-
-class C(A, B):
-    pass
-
-
-C.clown()
+__all__ = ["app"]

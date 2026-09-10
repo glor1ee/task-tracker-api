@@ -1,8 +1,10 @@
 .venv/
 __pycache__/
 *.db
+*.sqlite3
 *.bak
 .env
 .idea/
+.claude/
 .pytest_cache/
 .ruff_cache/
