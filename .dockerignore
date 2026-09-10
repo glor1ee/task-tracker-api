@@ -1,7 +1,15 @@
 .venv/
 __pycache__/
 *.db
+*.sqlite3
+*.bak
 .env
 .git/
+.github/
 .idea/
+.claude/
 .pytest_cache/
+.ruff_cache/
+tests/
+README.md
+test_main.http
