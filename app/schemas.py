@@ -54,7 +54,7 @@ class TaskCreate(TaskBase):
     project_id: int | None =  None
 
 
-class TaskUpdate(TaskBase):
+class TaskUpdate(BaseModel):
     """Update a task"""
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=500)
