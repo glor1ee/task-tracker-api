@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, selectinload
 
 from app import models, schemas, security
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -41,7 +41,7 @@ class ProjectRead(ProjectBase):
 
 
 class ProjectWithTasks(ProjectRead):
-    tasks: list["TaskRead"] = []
+    tasks: list[TaskRead] = []
 
 
 class TaskBase(BaseModel):
