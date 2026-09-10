@@ -26,6 +26,9 @@ class User(Base):
     projects = relationship("Project", back_populates="owner",
                             cascade="all, delete-orphan")
 
+    refresh_tokens = relationship("RefreshToken", back_populates="user",
+                                  cascade="all, delete-orphan")
+
 
 class Project(Base):
     __tablename__ = "projects"
@@ -73,3 +76,23 @@ class Task(Base):
 
     def __repr__(self):
         return f"<Task id:  {self.id} ({self.title})>"
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer,
+                     ForeignKey("users.id",
+                                ondelete="CASCADE",
+                                name="fk_refresh_tokens_user_id_users"
+                     ),
+                     nullable=False,
+                     index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    family_id = Column(String(36), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="refresh_tokens")

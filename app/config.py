@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     secret_key: str = "dev-only-insecure-secret-key-change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expiry_days: int = 30
 
 
 settings = Settings()
