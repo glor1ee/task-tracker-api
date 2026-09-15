@@ -1,6 +1,9 @@
+import time
 import uuid
 from datetime import timedelta
+from typing import Any
 
+from redis.asyncio import Redis
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -8,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app import models, security
 from app.config import settings
 
+REVOKED_JTI_PREFIX = "revoked_jti:"
 
 class InvalidRefreshToken(Exception):
     """The refresh token is invalid"""
@@ -64,6 +68,16 @@ async def revoke_family(db: AsyncSession, family_id: str) -> None:
     )
     await db.commit()
 
+
+async def revoke_access_token(redis: Redis, payload: dict[str, Any]) -> None:
+    ttl = int(payload["exp"] - time.time())
+    if payload.get("jti") and ttl > 0:
+        await redis.set(f"{REVOKED_JTI_PREFIX}{payload['jti']}", "1", ex=ttl)
+
+
+async def is_access_token_revoked(redis: Redis, payload: dict[str, Any]) -> bool:
+    jti = payload.get("jti")
+    return bool(jti) and await redis.exists(f"{REVOKED_JTI_PREFIX}{jti}") == 1
 
 async def _find(db: AsyncSession, raw: str) -> models.RefreshToken | None:
     stmt = (

@@ -16,14 +16,29 @@ services:
       timeout: 3s
       retries: 10
 
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
   api:
     build: .
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://taskuser:taskpass@db:5432/tasktracker
+      REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:-dev-only-insecure-secret-key-change-me-in-production}
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       - "8002:8001"

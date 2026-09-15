@@ -42,9 +42,12 @@ async def test_reused_refresh_token_revokes_whole_family(client):
 
 
 async def test_logout_revokes_refresh_token(client):
-    refresh = (await login(client))["refresh_token"]
+    tokens = await login(client)
+    refresh = tokens["refresh_token"]
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
 
-    assert (await client.post("/auth/logout", json={"refresh_token": refresh})).status_code == 204
+    response = await client.post("/auth/logout", json={"refresh_token": refresh}, headers=headers)
+    assert response.status_code == 204
     assert (await client.post("/auth/refresh", json={"refresh_token": refresh})).status_code == 401
 
 

@@ -1,5 +1,6 @@
 import os
 
+import fakeredis
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -7,6 +8,7 @@ from sqlalchemy.pool import NullPool
 
 from app.database import Base, enable_sqlite_foreign_keys, get_db
 from app.main import app
+from app.redis_client import get_redis
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
@@ -33,11 +35,20 @@ async def db_session():
 
 
 @pytest.fixture
-async def client(db_session):
+async def redis():
+    # A separate in-memory server per test: counters and blacklists never leak between tests.
+    client = fakeredis.FakeAsyncRedis(server=fakeredis.FakeServer(), decode_responses=True)
+    yield client
+    await client.aclose()
+
+
+@pytest.fixture
+async def client(db_session, redis):
     async def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_redis] = lambda: redis
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
         yield async_client

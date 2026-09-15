@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 from pwdlib import PasswordHash
@@ -20,7 +21,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(subject: str) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"exp": expire, "sub": subject}
+    payload = {"exp": expire, "sub": subject, "jti": secrets.token_hex(16)}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
@@ -36,9 +37,8 @@ def utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def decode_token(token: str) -> str | None:
+def decode_token(token: str) -> dict[str, Any] | None:
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except jwt.PyJWTError:
         return None
-    return payload.get("sub")
