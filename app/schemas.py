@@ -30,7 +30,7 @@ class TokenPair(Token):
 
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(min_length=1)
-    
+
 
 class ProjectBase(BaseModel):
     name: str = Field(min_length=1, max_length=200)
@@ -42,6 +42,7 @@ class ProjectCreate(ProjectBase):
 
 class ProjectRead(ProjectBase):
     """Read a project"""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -59,11 +60,13 @@ class TaskBase(BaseModel):
 
 class TaskCreate(TaskBase):
     """Create a new task"""
-    project_id: int | None =  None
+
+    project_id: int | None = None
 
 
 class TaskUpdate(BaseModel):
     """Update a task"""
+
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=500)
     is_done: bool | None = None
@@ -72,6 +75,7 @@ class TaskUpdate(BaseModel):
 
 class TaskRead(TaskBase):
     """Read a task"""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int

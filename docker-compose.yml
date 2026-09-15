@@ -20,7 +20,7 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg://taskuser:taskpass@db:5432/tasktracker
+      DATABASE_URL: postgresql+asyncpg://taskuser:taskpass@db:5432/tasktracker
       SECRET_KEY: ${SECRET_KEY:-dev-only-insecure-secret-key-change-me-in-production}
     depends_on:
       db:

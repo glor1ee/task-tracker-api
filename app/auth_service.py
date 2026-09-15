@@ -2,7 +2,8 @@ import uuid
 from datetime import timedelta
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app import models, security
 from app.config import settings
@@ -12,7 +13,9 @@ class InvalidRefreshToken(Exception):
     """The refresh token is invalid"""
 
 
-def issue_tokens(db: Session, user_id: int, family_id: str | None = None) -> dict[str, str]:
+async def issue_tokens(
+    db: AsyncSession, user_id: int, family_id: str | None = None
+) -> dict[str, str]:
     raw = security.generate_refresh_token()
     db.add(
         models.RefreshToken(
@@ -22,7 +25,7 @@ def issue_tokens(db: Session, user_id: int, family_id: str | None = None) -> dic
             expires_at=security.utcnow() + timedelta(days=settings.refresh_token_expiry_days),
         ),
     )
-    db.commit()
+    await db.commit()
     return {
         "access_token": security.create_access_token(str(user_id)),
         "refresh_token": raw,
@@ -30,28 +33,28 @@ def issue_tokens(db: Session, user_id: int, family_id: str | None = None) -> dic
     }
 
 
-def rotate(db: Session, raw: str) -> dict[str, str]:
-    token = _find(db, raw)
+async def rotate(db: AsyncSession, raw: str) -> dict[str, str]:
+    token = await _find(db, raw)
     if token is None:
         raise InvalidRefreshToken("Invalid refresh token")
     if token.revoked_at is not None:
-        revoke_family(db, token.family_id)
+        await revoke_family(db, token.family_id)
         raise InvalidRefreshToken()
     if token.expires_at <= security.utcnow() or not token.user.is_active:
         raise InvalidRefreshToken()
 
     token.revoked_at = security.utcnow()
-    return issue_tokens(db, token.user_id, family_id=token.family_id)
+    return await issue_tokens(db, token.user_id, family_id=token.family_id)
 
 
-def logout(db: Session, raw: str) -> None:
-    token = _find(db, raw)
+async def logout(db: AsyncSession, raw: str) -> None:
+    token = await _find(db, raw)
     if token is not None:
-        revoke_family(db, token.family_id)
+        await revoke_family(db, token.family_id)
 
 
-def revoke_family(db: Session, family_id: str) -> None:
-    db.execute(
+async def revoke_family(db: AsyncSession, family_id: str) -> None:
+    await db.execute(
         update(models.RefreshToken)
         .where(
             models.RefreshToken.family_id == family_id,
@@ -59,11 +62,15 @@ def revoke_family(db: Session, family_id: str) -> None:
         )
         .values(revoked_at=security.utcnow())
     )
-    db.commit()
+    await db.commit()
 
 
-def _find(db: Session, raw: str) -> models.RefreshToken | None:
-    stmt = select(models.RefreshToken).where(
-        models.RefreshToken.token_hash==security.hash_token(raw),
+async def _find(db: AsyncSession, raw: str) -> models.RefreshToken | None:
+    stmt = (
+        select(models.RefreshToken)
+        .options(selectinload(models.RefreshToken.user))
+        .where(
+            models.RefreshToken.token_hash == security.hash_token(raw),
+        )
     )
-    return db.scalars(stmt).first()
+    return (await db.scalars(stmt)).first()

@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "sqlite:///db.sqlite3"
+    database_url: str = "sqlite+aiosqlite:///db.sqlite3"
     app_title: str = "Task Tracker API"
 
     secret_key: str = "dev-only-insecure-secret-key-change-me-in-production"

@@ -22,31 +22,35 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
-    tasks = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
-    projects = relationship("Project", back_populates="owner",
-                            cascade="all, delete-orphan")
+    tasks = relationship(
+        "Task", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True
+    )
+    projects = relationship(
+        "Project", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True
+    )
 
-    refresh_tokens = relationship("RefreshToken", back_populates="user",
-                                  cascade="all, delete-orphan")
+    refresh_tokens = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class Project(Base):
     __tablename__ = "projects"
-    __table_args__ = (
-        UniqueConstraint("owner_id", "name", name="uq_projects_owner_id_name"),
-    )
+    __table_args__ = (UniqueConstraint("owner_id", "name", name="uq_projects_owner_id_name"),)
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
-                      nullable=True, index=True)
+    owner_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
     owner = relationship("User", back_populates="projects")
     tasks = relationship(
-"Task",
+        "Task",
         back_populates="project",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     def __repr__(self):
@@ -68,10 +72,11 @@ class Task(Base):
         index=True,
     )
 
-    project = relationship("Project", back_populates="tasks")
+    project = relationship("Project", back_populates="tasks", lazy="selectin")
 
-    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
-                      nullable=True, index=True)
+    owner_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     owner = relationship("User", back_populates="tasks")
 
     def __repr__(self):
@@ -82,13 +87,12 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer,
-                     ForeignKey("users.id",
-                                ondelete="CASCADE",
-                                name="fk_refresh_tokens_user_id_users"
-                     ),
-                     nullable=False,
-                     index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE", name="fk_refresh_tokens_user_id_users"),
+        nullable=False,
+        index=True,
+    )
     token_hash = Column(String(64), nullable=False, unique=True, index=True)
     family_id = Column(String(36), nullable=False, index=True)
     expires_at = Column(DateTime, nullable=False)

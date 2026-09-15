@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
 from app.database import get_db
@@ -8,44 +8,46 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-def get_own_project_or_404(
+async def get_own_project_or_404(
     project_id: int,
     current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> models.Project:
-    project = crud.get_project(db, project_id)
+    project = await crud.get_project(db, project_id)
     if project is None or project.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Project not found")
     return project
 
 
 @router.post("/", response_model=schemas.ProjectRead, status_code=status.HTTP_201_CREATED)
-def create_project(
+async def create_project(
     data: schemas.ProjectCreate,
     current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    return crud.create_project(db, data, owner_id=current_user.id)
+    return await crud.create_project(db, data, owner_id=current_user.id)
 
 
 @router.get("/", response_model=list[schemas.ProjectRead])
-def list_projects(
+async def list_projects(
     current_user: models.User = Depends(get_current_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    return crud.get_projects(db, current_user.id, skip=skip, limit=limit)
+    return await crud.get_projects(db, current_user.id, skip=skip, limit=limit)
 
 
 @router.get("/{project_id}", response_model=schemas.ProjectWithTasks)
-def retrieve_project(project: models.Project = Depends(get_own_project_or_404)):
-    return project
+async def retrieve_project(
+    project: models.Project = Depends(get_own_project_or_404), db: AsyncSession = Depends(get_db)
+):
+    return await crud.get_project_with_tasks(db, project.id)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project(
+async def delete_project(
     project: models.Project = Depends(get_own_project_or_404),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    crud.delete_project(db, project)
+    await crud.delete_project(db, project)
